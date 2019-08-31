@@ -1,0 +1,31 @@
+﻿<Window x:Class="SteelBotLauncher.AccountManagement.BrowseServer"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SteelBotLauncher.AccountManagement"
+        xmlns:intellicontrols="clr-namespace:Intelli.WPF.Controls.DataGrid;assembly=Intelli.WPF.Controls"
+        mc:Ignorable="d"
+        Title="Browse Servers" Height="450" Width="800">
+    <Grid>
+        <intellicontrols:IntelliGrid HorizontalAlignment="Stretch" Margin="0,5,0,0" VerticalAlignment="Stretch"
+                  FilteredItemsSource="{Binding Path=AllServers}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  AlternatingRowBackground="Wheat">
+            <intellicontrols:IntelliGrid.Columns>
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="Add Server" Command="{Binding Path=DataContext.ImportCommand,RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Name" Binding="{Binding ServerName}"></DataGridTextColumn>
+                <DataGridTextColumn Header="Description" Binding="{Binding ServerDescription}"></DataGridTextColumn>
+                <DataGridTextColumn Header="EMU" Binding="{Binding EMU}"></DataGridTextColumn>
+                <DataGridTextColumn Header="Address" Binding="{Binding ServerIpAndPort}"></DataGridTextColumn>
+            </intellicontrols:IntelliGrid.Columns>
+        </intellicontrols:IntelliGrid>
+    </Grid>
+</Window>
