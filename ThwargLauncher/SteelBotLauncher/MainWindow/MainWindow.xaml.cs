@@ -448,6 +448,10 @@ namespace SteelBotLauncher
         {
             btnLaunch.IsEnabled = enable;
         }
+
+        bool init = true;
+        string account_name = "";
+
         /// <summary>
         /// Get all server/accounts that are checked to be launched
         /// AND that are not already running
@@ -470,10 +474,19 @@ namespace SteelBotLauncher
                             {
                                 continue;
                             }
+
+                            if (init)
+                            {
+                                account_name = account.Name;
+                                init = false;
+                            }
+
+                            account.Name = account_name + count_abc.ToString();
+
                             var launchItem = new LaunchItem()
                             {
                                 Alias = account.Alias,
-                                AccountName = account.Name + count_abc.ToString(),
+                                AccountName = account.Name,
                                 Priority = account.Priority,
                                 Password = account.Password,
                                 ServerName = server.ServerName,
