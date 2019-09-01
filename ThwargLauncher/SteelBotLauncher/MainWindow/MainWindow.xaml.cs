@@ -430,6 +430,8 @@ namespace SteelBotLauncher
                 _launchWorker.LaunchQueue(_launchConcurrentQueue, _clientExeLocation);
             }
         }
+
+        int count = 0;
         private void UpdateConcurrentQueue()
         {
             var launchSorter = new LaunchSorter();
@@ -440,6 +442,7 @@ namespace SteelBotLauncher
                 _launchConcurrentQueue.Enqueue(item);
             }
             _gameMonitor.QueueReread();
+            count = (count + 1) % 10;
         }
         private void EnableInterface(bool enable)
         {
@@ -470,7 +473,7 @@ namespace SteelBotLauncher
                             var launchItem = new LaunchItem()
                             {
                                 Alias = account.Alias,
-                                AccountName = account.Name,
+                                AccountName = account.Name += count,
                                 Priority = account.Priority,
                                 Password = account.Password,
                                 ServerName = server.ServerName,

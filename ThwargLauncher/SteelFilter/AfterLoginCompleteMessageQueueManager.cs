@@ -12,6 +12,7 @@ namespace SteelFilter
     class AfterLoginCompleteMessageQueueManager
     {
         private string STEELBOT_MANAGER = "Steelhead Trout";
+        private string STEELBOT_MANAGER_2 = "Steelhead Trout II";
 
         bool freshLogin;
 
@@ -206,10 +207,10 @@ namespace SteelFilter
             var ac_objs = CoreManager.Current.WorldFilter.GetAll();
             foreach (var aco in ac_objs)
             {
-                if (aco.Name == STEELBOT_MANAGER)
+                if (aco.Name == STEELBOT_MANAGER || aco.Name == STEELBOT_MANAGER_2)
                 {
                     aco_steelbot_manager = aco.Id;
-                    log.WriteDebug("Found Steelbot Manager: " + STEELBOT_MANAGER);
+                    log.WriteDebug("Found Steelbot Manager.");
                     break;
                 }
             }
@@ -320,10 +321,12 @@ namespace SteelFilter
                     next_state = STEELBOT_STATE.TURNING_IN_PATHWARDEN_TOKEN;
                     break;
                 case STEELBOT_STATE.TURNING_IN_PATHWARDEN_TOKEN:
+                    Thread.Sleep(100);
                     var token = FindItemInInventoryByName(PATHWARDEN_TOKEN);
-                    if (token != 0) {
+                    if (token != 0)
+                    {
                         CoreManager.Current.Actions.GiveItem(token, aco_pathwarden);
-                        next_state = STEELBOT_STATE.WAITING_FOR_KEY;
+                        waitMsAndGoToState(2000, STEELBOT_STATE.TURNING_IN_PATHWARDEN_TOKEN);
                     }
                     else
                     {
@@ -332,11 +335,7 @@ namespace SteelFilter
                     }
                     break;
                 case STEELBOT_STATE.WAITING_FOR_KEY:
-                    var key = FindItemInInventoryByName(PATHWARDEN_KEY);
-                    if(FindItemInInventoryByName(PATHWARDEN_TOKEN) != 0)
-                    {
-                        next_state = STEELBOT_STATE.TURNING_IN_PATHWARDEN_TOKEN;
-                    }
+                    var key = FindItemInInventoryByName(PATHWARDEN_KEY);                    
                     if (key != 0)
                     {
                         next_state = STEELBOT_STATE.UNLOCKING_CHEST;
@@ -497,7 +496,7 @@ namespace SteelFilter
                 }
 
                 if (current_state == STEELBOT_STATE.LOGGING_OUT ||
-                    DateTime.Now.Subtract(TimeSpan.FromMilliseconds(5*60*1000)) > loginCompleteTime )
+                    DateTime.Now.Subtract(TimeSpan.FromMilliseconds(3*60*1000)) > loginCompleteTime )
                 { 
                     CoreManager.Current.RenderFrame -= new EventHandler<EventArgs>(Current_RenderFrame);
                     CoreManager.Current.Actions.Logout();

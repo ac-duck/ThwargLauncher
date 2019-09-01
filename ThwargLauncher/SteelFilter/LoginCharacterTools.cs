@@ -17,6 +17,7 @@ namespace SteelFilter
 
         internal void FilterCore_ServerDispatch(object sender, NetworkMessageEventArgs e)
         {
+            log.WriteDebug("Account:" + GameRepo.Game.Account);            
             if (e.Message.Type == 0xF658) // Zone Name
             {
                 zonename = Convert.ToString(e.Message["zonename"]);
