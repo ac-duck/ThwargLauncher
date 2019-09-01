@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 using Decal.Adapter;
+using System.Drawing;
 
 namespace SteelFilter
 {
@@ -76,6 +77,132 @@ namespace SteelFilter
             }
 
             return false;
+        }
+
+        private string base_name = "Zteil ";
+        Random rand = new Random();
+
+        private string randomLetter()
+        {
+            return char.ConvertFromUtf32('a' + rand.Next(0, 25));
+        }
+
+        public string randomName()
+        {            
+            string random_string = "Z";
+            random_string += randomLetter();
+            random_string += "q";
+            random_string += randomLetter();
+            random_string += "z";
+            random_string += randomLetter();
+            random_string += "z";
+            random_string += randomLetter();
+            random_string += "j";
+            return base_name + random_string;
+        }
+
+        Point[] make_holt =
+        {
+            new Point(330,  233),
+            new Point(50,  75),
+            new Point(97,  575),
+            new Point(42,  271),           
+            new Point(94,  567),
+            new Point(94,  567),
+            new Point(94,  567),
+            new Point(94,  567)
+        };
+
+        Point[] make_shoushi =
+        {
+            new Point(330,  233),
+            new Point(50,  148),
+            new Point(97,  575),
+            new Point(42,  271),
+            new Point(94,  567),
+            new Point(94,  567),
+            new Point(94,  567),
+            new Point(94,  567)
+        };
+
+        Point delete_char = new Point(126, 571);
+        Point delete_char_done = new Point(312, 361);
+
+        int indexCreateCharClick = 0;
+
+        readonly System.Windows.Forms.Timer createCharacterTimer = new System.Windows.Forms.Timer();
+        readonly System.Windows.Forms.Timer deleteCharacterTimer = new System.Windows.Forms.Timer();
+
+        string randomCharacterName = "";
+
+        bool deleteing_character = true;
+        int delete_cmds_index = 0;
+
+        public void DeleteCharacter_tick(object sender, EventArgs e)
+        {
+            switch (delete_cmds_index) {
+                case 0:
+                    Filter.Shared.PostMessageTools.SendMouseClick(delete_char.X, delete_char.Y);
+                    break;
+                case 1:
+                    Filter.Shared.PostMessageTools.SendCharString("delete");
+                    break;
+                case 2:
+                    Filter.Shared.PostMessageTools.SendMouseClick(delete_char_done.X, delete_char_done.Y);
+                    break;
+                case 3:
+                    break;
+                default:
+                    deleteCharacterTimer.Stop();
+                    deleteing_character = false;
+                    break;
+            }
+            delete_cmds_index++;
+        }
+
+        public bool CreateCharacter()
+        {
+            string name = randomName();
+            randomCharacterName = name;
+
+            indexCreateCharClick = 0;
+            deleteing_character = true;
+            createCharacterTimer.Tick += new EventHandler(DeleteCharacter_tick);
+            createCharacterTimer.Interval = 1000;
+            createCharacterTimer.Start();
+
+            createCharacterTimer.Tick += new EventHandler(createChacter_tick);
+            createCharacterTimer.Interval = 300;
+            createCharacterTimer.Start();
+
+            return true;
+        }
+
+        private void createChacter_tick(object sender, EventArgs e)
+        {
+
+            if (deleteing_character)
+            {
+                return;
+            }
+            if (indexCreateCharClick < make_shoushi.Length)
+            {
+                var x = make_shoushi[indexCreateCharClick].X;
+                var y = make_shoushi[indexCreateCharClick].Y;
+                Filter.Shared.PostMessageTools.SendMouseClick(x, y);                
+            }
+            else if (indexCreateCharClick == make_shoushi.Length)
+            {
+                log.WriteDebug("Creating character with name: " + randomCharacterName);
+                Filter.Shared.PostMessageTools.SendCharString(randomCharacterName);
+            }
+            else
+            {
+                Filter.Shared.PostMessageTools.SendMouseClick(708, 583);
+                createCharacterTimer.Stop();
+                log.WriteDebug("Done.");
+            }
+            indexCreateCharClick++;
         }
 
         public bool LoginCharacter(string name)

@@ -17,6 +17,11 @@ namespace Filter.Shared
         private const byte VK_PAUSE = 0x13;
         private const byte VK_SPACE = 0x20;
 
+        public static void SendBackspace()
+        {
+            PostMsgs.SendBackspace(CoreManager.Current.Decal.Hwnd);
+        }
+
         public static void SendEnter()
         {
             PostMsgs.SendEnter(CoreManager.Current.Decal.Hwnd);

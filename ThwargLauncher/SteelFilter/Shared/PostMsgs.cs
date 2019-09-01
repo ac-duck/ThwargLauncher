@@ -8,6 +8,7 @@ namespace KeyUtil
     {
         // http://msdn.microsoft.com/en-us/library/dd375731%28v=vs.85%29.aspx
 
+        private const byte VK_BACK = 0x08;
         private const byte VK_RETURN = 0x0D;
         private const byte VK_SHIFT = 0x10;
         private const byte VK_CONTROL = 0x11;
@@ -89,6 +90,11 @@ namespace KeyUtil
         {
             User32.PostMessage(wnd, User32.WM_KEYDOWN, (IntPtr)VK_RETURN, (UIntPtr)0x001C0001);
             User32.PostMessage(wnd, User32.WM_KEYUP, (IntPtr)VK_RETURN, (UIntPtr)0xC01C0001);
+        }
+        public static void SendBackspace(IntPtr wnd)
+        {
+            User32.PostMessage(wnd, User32.WM_KEYDOWN, (IntPtr)VK_BACK, (UIntPtr)0x001C0001);
+            User32.PostMessage(wnd, User32.WM_KEYUP, (IntPtr)VK_BACK, (UIntPtr)0xC01C0001);
         }
         public class WndTimer : Timer
         {

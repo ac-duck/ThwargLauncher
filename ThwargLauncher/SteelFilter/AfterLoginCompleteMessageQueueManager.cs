@@ -19,6 +19,7 @@ namespace SteelFilter
         {
             CREATING_CHARACTER = 0,
             LOGGING_IN,
+            HELLO,
             CHECKING_DOOR,
             OPENING_DOOR,
             APPROACHING_SAM,
@@ -42,8 +43,8 @@ namespace SteelFilter
             ACCOUNT_FULL_WAITING_FOR_DELETE
         }
 
-        STEELBOT_STATE current_state = STEELBOT_STATE.CHECKING_DOOR;
-        STEELBOT_STATE next_state = STEELBOT_STATE.CHECKING_DOOR;
+        STEELBOT_STATE current_state = STEELBOT_STATE.HELLO;
+        STEELBOT_STATE next_state = STEELBOT_STATE.HELLO;
         bool action_completed = true;
 
         DateTime loginCompleteTime = DateTime.MaxValue;
@@ -116,10 +117,13 @@ namespace SteelFilter
 
         private void Current_ContainerOpened(object sender, ContainerOpenedEventArgs e)
         {
-            aco_chest_container = e.ItemGuid;
-            action_completed = true;
-            //current_state = STEELBOT_STATE.LOOTING_CHEST;
-            CoreManager.Current.Actions.AddChatText("Container opened: " + aco_chest_container.ToString(), 5);
+            if (e.ItemGuid != 0)
+            {
+                aco_chest_container = e.ItemGuid;
+                action_completed = true;
+                current_state = STEELBOT_STATE.LOOTING_CHEST;
+                CoreManager.Current.Actions.AddChatText("Container opened: " + aco_chest_container.ToString(), 5);
+            }
         }
 
         private void WorldFilter_ChangeObject(object sender, ChangeObjectEventArgs e)
@@ -149,7 +153,8 @@ namespace SteelFilter
         {
             action_completed = true;
         }
-        
+
+        double door_dist = 1000;
         void updateWorldAcos()
         {            
             var ac_objs = CoreManager.Current.WorldFilter.GetAll();
@@ -165,9 +170,15 @@ namespace SteelFilter
                         aco_greeter = aco.Id;
                         log.WriteDebug("Found Greeter");
                         break;
-                    case "Door":
-                        aco_door = aco.Id;
-                        log.WriteDebug("Found Door");
+                    case "Door":                        
+                        var dist = aco.Coordinates().DistanceToCoords(CoreManager.Current.WorldFilter.GetInventory().First.Coordinates());
+                        log.WriteDebug("dist:" + dist);
+                        if (dist < door_dist)
+                        {
+                            door_dist = dist;
+                            aco_door = aco.Id;
+                            log.WriteDebug("Found Door");
+                        }
                         break;
                     case "Samuel":
                         aco_sign = aco.Id;
@@ -179,6 +190,7 @@ namespace SteelFilter
                         aco_pathwarden_chest = aco.Id;
                         log.WriteDebug("Found Pathwarden Chest");
                         break;
+                    case "Pathwarden Koro Ijida":
                     case "Pathwarden Thorolf":
                         aco_pathwarden = aco.Id;
                         log.WriteDebug("Found Pathwarden");
@@ -241,9 +253,11 @@ namespace SteelFilter
         List<string> pathwarden_armor_names = new List<string> {
             "Pathwarden Gauntlets",
             "Pathwarden Plate Leggings",
+            "Pathwarden Yoroi Leggings",
             "Pathwarden Helm",
             "Pathwarden Sollerets",
-            "Pathwarden Plate Hauberk"
+            "Pathwarden Plate Hauberk",
+            "Pathwarden Yoroi Hauberk"
         };
 
         //uint currentStateTimeout = 5000;
@@ -258,11 +272,23 @@ namespace SteelFilter
             action_completed = false;
             switch (state)
             {
+                case STEELBOT_STATE.HELLO:
+                    if (aco_greeter == 0)
+                    {
+                        next_state = STEELBOT_STATE.LOGGING_OUT;
+                        action_completed = true;
+                    }
+                    else
+                    {
+                        CoreManager.Current.Actions.UseItem(aco_greeter, 0);
+                        next_state = STEELBOT_STATE.CHECKING_DOOR;
+                    }
+                    break;
                 case STEELBOT_STATE.CHECKING_DOOR:
-                    CoreManager.Current.Actions.RequestId(aco_door);
+                    CoreManager.Current.Actions.RequestId(aco_door);                    
                     next_state = STEELBOT_STATE.OPENING_DOOR;
                     break;
-                case STEELBOT_STATE.OPENING_DOOR:
+                case STEELBOT_STATE.OPENING_DOOR:                    
                     if (is_door_open){
                         action_completed = true;
                     } else {
@@ -319,13 +345,22 @@ namespace SteelFilter
                     break;                
                 case STEELBOT_STATE.UNLOCKING_CHEST:
                     CoreManager.Current.Actions.ApplyItem(aco_pathwarden_key, aco_pathwarden_chest);
-                    next_state = STEELBOT_STATE.OPENING_CHEST;
+                    waitMsAndGoToState(200, STEELBOT_STATE.OPENING_CHEST);
                     break;
-                case STEELBOT_STATE.OPENING_CHEST:
+                case STEELBOT_STATE.OPENING_CHEST:                    
                     if (aco_chest_container == 0)
                     {
-                        CoreManager.Current.Actions.UseItem(aco_pathwarden_chest, 0);
-                        waitMsAndGoToState(3000, STEELBOT_STATE.OPENING_CHEST);
+                        var retry_key = FindItemInInventoryByName(PATHWARDEN_KEY);
+                        if (retry_key != 0)
+                        {
+                            next_state = STEELBOT_STATE.UNLOCKING_CHEST;
+                            action_completed = true;
+                        }
+                        else
+                        {
+                            CoreManager.Current.Actions.UseItem(aco_pathwarden_chest, 0);
+                            next_state = STEELBOT_STATE.LOOTING_CHEST;
+                        }
                     }
                     else
                     {
@@ -356,8 +391,8 @@ namespace SteelFilter
                     var steel = FindItemInInventoryByName(SALVAGED_STEEL);
                     if (steel != 0)
                     {
-                        CoreManager.Current.Actions.DropItem(steel);
-                        waitMsAndGoToState(500, STEELBOT_STATE.GIVING_STEEL);
+                        CoreManager.Current.Actions.GiveItem(steel, aco_steelbot_manager);
+                        waitMsAndGoToState(300, STEELBOT_STATE.GIVING_STEEL);
                     }
                     else
                     {
@@ -424,6 +459,7 @@ namespace SteelFilter
             {
                 updateWorldAcos();
                 updateInventoryAcos();
+                findSteelBotManagerAco();
 
                 doStateAction(current_state);
 
