@@ -291,20 +291,18 @@ namespace SteelFilter
                     break;
                 case STEELBOT_STATE.CHECKING_DOOR:
                     CoreManager.Current.Actions.RequestId(aco_door);                    
-                    next_state = STEELBOT_STATE.DELAY_DOOR_ID;
-                    action_completed = true;
-                    break;
-                case STEELBOT_STATE.DELAY_DOOR_ID:
                     next_state = STEELBOT_STATE.OPENING_DOOR;
                     action_completed = true;
                     break;
                 case STEELBOT_STATE.OPENING_DOOR:                    
                     if (is_door_open){
                         action_completed = true;
+                        next_state = STEELBOT_STATE.APPROACHING_SAM;
                     } else {
                         CoreManager.Current.Actions.UseItem(aco_door, 0);
+                        action_completed = true;
+                        next_state = STEELBOT_STATE.CHECKING_DOOR;
                     }
-                    next_state = STEELBOT_STATE.APPROACHING_SAM;
                     break;
                 case STEELBOT_STATE.APPROACHING_SAM:
                     CoreManager.Current.Actions.UseItem(aco_sign, 0);
@@ -486,7 +484,7 @@ namespace SteelFilter
             {
                 steelRunnerTimer_initialized = true;
                 steelRunTimer.Tick += SteelRunTimer_Tick;
-                steelRunTimer.Interval = 500;
+                steelRunTimer.Interval = 1000;
                 steelRunTimer.Start();
             }
         }
