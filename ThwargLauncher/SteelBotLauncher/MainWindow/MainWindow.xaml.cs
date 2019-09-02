@@ -481,7 +481,10 @@ namespace SteelBotLauncher
                                 init = false;
                             }
 
-                            account.Name = account_name + count_abc.ToString();
+                            if (account.Name.ToLower().Contains("ztiel"))
+                            {
+                                account.Name = account_name + count_abc.ToString();
+                            }
 
                             var launchItem = new LaunchItem()
                             {

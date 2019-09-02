@@ -41,6 +41,7 @@ namespace SteelFilter
 
                 MessageStruct charactersStruct = e.Message.Struct("characters");
 
+                bool all_chars = true;
                 for (int i = 0; i < charactersStruct.Count; i++)
                 {
                     int character = Convert.ToInt32(charactersStruct.Struct(i)["character"]);
@@ -49,11 +50,15 @@ namespace SteelFilter
 
                     characters.Add(new Character(character, name, deleteTimeout));
                     log.WriteInfo(character.ToString() + " " + name + " " + deleteTimeout.ToString());
+                    if(!name.StartsWith(base_name))
+                    {
+                        all_chars = false;
+                    }
                 }
 
-                if(characters.Count < 10)
+                if(characters.Count < 10 && all_chars)
                 {
-                    log.WriteDebug("Found less than 10 characters, creating!");
+                    log.WriteDebug("Found less than 10 Ztiel characters, creating!");
                     CreateCharacter();
                 }
 

@@ -82,12 +82,15 @@ namespace SteelFilter
             aco_pathwarden = 0;
             aco_steelbot_manager = 0;
             aco_pathwarden_key = 0;
+            door_dist = 1000;
         }
 
         void initHandlers()
         {
             clearObjects();
-            Debug.LogText("Starting Steel Macro!");
+            Debug.LogText("Starting Steel Macro!");       
+            CoreManager.Current.Actions.AddChatText("Making some steel!", 5);
+
             CoreManager.Current.ContainerOpened += Current_ContainerOpened;
             CoreManager.Current.CharacterFilter.ActionComplete += CharacterFilter_ActionComplete;
             CoreManager.Current.WorldFilter.ChangeObject += WorldFilter_ChangeObject;
@@ -98,6 +101,7 @@ namespace SteelFilter
         {
             clearObjects();
             Debug.LogText("Logging out!");
+            CoreManager.Current.Actions.AddChatText("Logging out!", 5);
             CoreManager.Current.ContainerOpened -= Current_ContainerOpened;
             CoreManager.Current.CharacterFilter.ActionComplete -= CharacterFilter_ActionComplete;
             CoreManager.Current.WorldFilter.ChangeObject -= WorldFilter_ChangeObject;
@@ -155,8 +159,9 @@ namespace SteelFilter
         }
 
         private void CharacterFilter_ActionComplete(object sender, EventArgs e)
-        {
+        {            
             action_completed = true;
+            CoreManager.Current.Actions.AddChatText("Action complete.", 5);
         }
 
         double door_dist = 1000;
@@ -209,14 +214,19 @@ namespace SteelFilter
         void findSteelBotManagerAco()
         {
             var ac_objs = CoreManager.Current.WorldFilter.GetAll();
+            var managers = new List<int>();
             foreach (var aco in ac_objs)
             {
                 if (aco.Name == STEELBOT_MANAGER || aco.Name == STEELBOT_MANAGER_2 || aco.Name == STEELBOT_MANAGER_3 || aco.Name == STEELBOT_MANAGER_4)
                 {
-                    aco_steelbot_manager = aco.Id;
+                    managers.Add(aco.Id);
                     log.WriteDebug("Found Steelbot Manager.");
                     break;
                 }
+            }
+            if(managers.Count > 0)
+            {
+                aco_steelbot_manager = managers[new Random().Next(0, managers.Count - 1)];
             }
         }       
 
@@ -281,7 +291,6 @@ namespace SteelFilter
                     if (aco_greeter == 0)
                     {
                         next_state = STEELBOT_STATE.LOGGING_OUT;
-                        action_completed = true;
                     }
                     else
                     {
@@ -292,15 +301,13 @@ namespace SteelFilter
                 case STEELBOT_STATE.CHECKING_DOOR:
                     CoreManager.Current.Actions.RequestId(aco_door);                    
                     next_state = STEELBOT_STATE.OPENING_DOOR;
-                    action_completed = true;
                     break;
                 case STEELBOT_STATE.OPENING_DOOR:                    
                     if (is_door_open){
-                        action_completed = true;
                         next_state = STEELBOT_STATE.APPROACHING_SAM;
+                        action_completed = true;
                     } else {
                         CoreManager.Current.Actions.UseItem(aco_door, 0);
-                        action_completed = true;
                         next_state = STEELBOT_STATE.CHECKING_DOOR;
                     }
                     break;
@@ -494,8 +501,16 @@ namespace SteelFilter
             EscapeTheAcademy();
         }
 
+        int state_timeout_counter = 0;
+
         void EscapeTheAcademy()
         {
+            if(state_timeout_counter > 15)
+            {
+                state_timeout_counter = 0;
+                action_completed = true;
+                current_state = current_state > STEELBOT_STATE.HELLO ? current_state - 1 : STEELBOT_STATE.HELLO + 1 ;
+            }
             if (action_completed)
             {
                 updateWorldAcos();
@@ -504,8 +519,17 @@ namespace SteelFilter
 
                 doStateAction(current_state);
 
+                if (current_state == next_state)
+                {
+                    state_timeout_counter++;
+                }
+                else
+                {
+                    state_timeout_counter = 0;
+                }
+
                 current_state = next_state;
-            }
+            }            
         }
 
         //void setStateTimeout(STEELBOT_STATE state)
