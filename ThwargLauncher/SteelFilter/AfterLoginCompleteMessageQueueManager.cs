@@ -13,6 +13,8 @@ namespace SteelFilter
     {
         private string STEELBOT_MANAGER = "Steelhead Trout";
         private string STEELBOT_MANAGER_2 = "Steelhead Trout II";
+        private string STEELBOT_MANAGER_3 = "Steelhead Trout III";
+        private string STEELBOT_MANAGER_4 = "Steelhead Trout IV";
 
         bool freshLogin;
 
@@ -22,17 +24,20 @@ namespace SteelFilter
             LOGGING_IN,
             HELLO,
             CHECKING_DOOR,
+            DELAY_DOOR_ID,
             OPENING_DOOR,
             APPROACHING_SAM,
             TALKING_TO_JONATHAN,
             WAITING_FOR_EXIT_TOKEN,
             ESCAPING,
+            DELAY1,
             PORTALING,
             MOVING_TO_CHEST,
             TURNING_IN_PATHWARDEN_TOKEN,
             WAITING_FOR_KEY,
             APPROACHING_CHEST,
             UNLOCKING_CHEST,
+            WAITING_FOR_CHEST_TO_OPEN,
             CHEST_UNLOCKED,
             OPENING_CHEST,
             LOOTING_CHEST,
@@ -52,7 +57,6 @@ namespace SteelFilter
 
         int aco_greeter = 0;
         int aco_door = 0;
-        WorldObject wobj_door;
         int aco_sign = 0;
         int aco_jonathan = 0;
         int aco_pathwarden_chest = 0;
@@ -69,7 +73,6 @@ namespace SteelFilter
         {
             aco_greeter = 0;
             aco_door = 0;
-            wobj_door = null;
             aco_sign = 0;
             aco_jonathan = 0;
             aco_pathwarden_chest = 0;
@@ -99,6 +102,7 @@ namespace SteelFilter
             CoreManager.Current.CharacterFilter.ActionComplete -= CharacterFilter_ActionComplete;
             CoreManager.Current.WorldFilter.ChangeObject -= WorldFilter_ChangeObject;
             CoreManager.Current.WorldFilter.CreateObject -= WorldFilter_CreateObject;
+            steelRunTimer.Tick -= SteelRunTimer_Tick;
         }
 
         private void WorldFilter_CreateObject(object sender, CreateObjectEventArgs e)
@@ -122,7 +126,7 @@ namespace SteelFilter
             {
                 aco_chest_container = e.ItemGuid;
                 action_completed = true;
-                current_state = STEELBOT_STATE.LOOTING_CHEST;
+                current_state = STEELBOT_STATE.DELAY1;
                 CoreManager.Current.Actions.AddChatText("Container opened: " + aco_chest_container.ToString(), 5);
             }
         }
@@ -207,7 +211,7 @@ namespace SteelFilter
             var ac_objs = CoreManager.Current.WorldFilter.GetAll();
             foreach (var aco in ac_objs)
             {
-                if (aco.Name == STEELBOT_MANAGER || aco.Name == STEELBOT_MANAGER_2)
+                if (aco.Name == STEELBOT_MANAGER || aco.Name == STEELBOT_MANAGER_2 || aco.Name == STEELBOT_MANAGER_3 || aco.Name == STEELBOT_MANAGER_4)
                 {
                     aco_steelbot_manager = aco.Id;
                     log.WriteDebug("Found Steelbot Manager.");
@@ -287,7 +291,12 @@ namespace SteelFilter
                     break;
                 case STEELBOT_STATE.CHECKING_DOOR:
                     CoreManager.Current.Actions.RequestId(aco_door);                    
+                    next_state = STEELBOT_STATE.DELAY_DOOR_ID;
+                    action_completed = true;
+                    break;
+                case STEELBOT_STATE.DELAY_DOOR_ID:
                     next_state = STEELBOT_STATE.OPENING_DOOR;
+                    action_completed = true;
                     break;
                 case STEELBOT_STATE.OPENING_DOOR:                    
                     if (is_door_open){
@@ -344,9 +353,10 @@ namespace SteelFilter
                     break;                
                 case STEELBOT_STATE.UNLOCKING_CHEST:
                     CoreManager.Current.Actions.ApplyItem(aco_pathwarden_key, aco_pathwarden_chest);
-                    waitMsAndGoToState(200, STEELBOT_STATE.OPENING_CHEST);
+                    next_state = STEELBOT_STATE.OPENING_CHEST;
+                    action_completed = true;
                     break;
-                case STEELBOT_STATE.OPENING_CHEST:                    
+                case STEELBOT_STATE.OPENING_CHEST:
                     if (aco_chest_container == 0)
                     {
                         var retry_key = FindItemInInventoryByName(PATHWARDEN_KEY);
@@ -358,26 +368,40 @@ namespace SteelFilter
                         else
                         {
                             CoreManager.Current.Actions.UseItem(aco_pathwarden_chest, 0);
-                            next_state = STEELBOT_STATE.LOOTING_CHEST;
+                            next_state = STEELBOT_STATE.OPENING_CHEST;
                         }
                     }
                     else
                     {
+                        CoreManager.Current.Actions.AddChatText("OPENING_CHEST_NONZERO_CONTAINER" + state.ToString(), 5);
                         next_state = STEELBOT_STATE.LOOTING_CHEST;
                         action_completed = true;
                     }
                     break;
+                case STEELBOT_STATE.DELAY1:
+                    next_state = STEELBOT_STATE.LOOTING_CHEST;
+                    action_completed = true;
+                    break;
                 case STEELBOT_STATE.LOOTING_CHEST:
                     var chest = CoreManager.Current.WorldFilter.GetByContainer(aco_chest_container);
-                    if (chest.Count > 0) {
-                        CoreManager.Current.Actions.MoveItem(chest.First.Id, CoreManager.Current.CharacterFilter.Id);
-                        waitMsAndGoToState(500, STEELBOT_STATE.LOOTING_CHEST);
-                    }            
+                    if (aco_chest_container != 0)
+                    {
+                        if (chest.Count > 0)
+                        {
+                            CoreManager.Current.Actions.MoveItem(chest.First.Id, CoreManager.Current.CharacterFilter.Id);
+                            next_state = STEELBOT_STATE.LOOTING_CHEST;
+                            action_completed = true;
+                        }
+                        else
+                        {
+                            next_state = STEELBOT_STATE.CLOSING_CHEST;
+                            action_completed = true;
+                        }
+                    }
                     else
                     {
-                        next_state = STEELBOT_STATE.CLOSING_CHEST;
-                        action_completed = true;
-                    }     
+                        CoreManager.Current.Actions.AddChatText("LOOTING_CHEST__0_CONTAINER" + state.ToString(), 5);
+                    }
                     break;
                 case STEELBOT_STATE.CLOSING_CHEST:
                     CoreManager.Current.Actions.UseItem(aco_pathwarden_chest, 0);
@@ -452,6 +476,26 @@ namespace SteelFilter
             action_completed = true;
         }
 
+        readonly System.Windows.Forms.Timer steelRunTimer = new System.Windows.Forms.Timer();
+        int state;
+
+        bool steelRunnerTimer_initialized = false;
+        public void Init_SteelRunner_Timer()
+        {
+            if (!steelRunnerTimer_initialized)
+            {
+                steelRunnerTimer_initialized = true;
+                steelRunTimer.Tick += SteelRunTimer_Tick;
+                steelRunTimer.Interval = 500;
+                steelRunTimer.Start();
+            }
+        }
+
+        private void SteelRunTimer_Tick(object sender, EventArgs e)
+        {
+            EscapeTheAcademy();
+        }
+
         void EscapeTheAcademy()
         {
             if (action_completed)
@@ -491,8 +535,7 @@ namespace SteelFilter
 
                 if (CoreManager.Current.CharacterFilter.Name.ToLower().StartsWith("z"))
                 {
-                    // Do the Academy Run!
-                    EscapeTheAcademy();
+                    Init_SteelRunner_Timer();
                 }
 
                 if (current_state == STEELBOT_STATE.LOGGING_OUT ||
@@ -509,14 +552,20 @@ namespace SteelFilter
 
         public void FilterCore_ClientDispatch(object sender, NetworkMessageEventArgs e)
         {
-            if (e.Message.Type == 0xF7C8) // Enter Game
+            if (e.Message.Type == 0xF7C8)
+            { // Enter Game 
                 freshLogin = true;
+                current_state = STEELBOT_STATE.HELLO;
+                steelRunnerTimer_initialized = false;
+            }
 
             if (e.Message.Type == 0xF7B1 && Convert.ToInt32(e.Message["action"]) == 0xA1) // Character Materialize (Any time is done portalling in, login or portal)
             {
                 if (freshLogin)
                 {
                     freshLogin = false;
+                    current_state = STEELBOT_STATE.HELLO;
+                    action_completed = true;
 
                     string characterName = GameRepo.Game.Character;
                     if (string.IsNullOrEmpty(characterName))

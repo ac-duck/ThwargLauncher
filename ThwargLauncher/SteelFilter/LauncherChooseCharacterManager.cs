@@ -92,12 +92,13 @@ namespace SteelFilter
 
                             if (state == 3)
                             {
-                                bool ok = loginCharacterTools.CreateCharacter();
+                                //bool ok = loginCharacterTools.CreateCharacter();
                                 //bool ok = loginCharacterTools.LoginCharacter(ourCharacter.CharacterName);
-                                if (ok)
-                                {
-                                    Heartbeat.RecordCharacterName(ourCharacter.CharacterName);
-                                }
+                                Heartbeat.RecordCharacterName(ourCharacter.CharacterName);
+                                //if (ok)
+                                //{
+                                    
+                                //}
                             }
                         }
                     }

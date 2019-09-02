@@ -17,12 +17,12 @@ namespace SteelFilter
 
         internal void FilterCore_ServerDispatch(object sender, NetworkMessageEventArgs e)
         {
-            log.WriteDebug("Account:" + GameRepo.Game.Account);            
+            log.WriteDebug("Account123:" + GameRepo.Game.Account);            
             if (e.Message.Type == 0xF658) // Zone Name
             {
                 zonename = Convert.ToString(e.Message["zonename"]);
-                log.WriteInfo("zonename: '{0}'", zonename);
-                GameRepo.Game.SetAccount(zonename);
+                log.WriteInfo("zonename123: '{0}'", zonename);
+                GameRepo.Game.SetAccount(zonename);                
             }
 
             if (e.Message.Type == 0xF7E1) // Server Name
@@ -49,6 +49,12 @@ namespace SteelFilter
 
                     characters.Add(new Character(character, name, deleteTimeout));
                     log.WriteInfo(character.ToString() + " " + name + " " + deleteTimeout.ToString());
+                }
+
+                if(characters.Count < 10)
+                {
+                    log.WriteDebug("Found less than 10 characters, creating!");
+                    CreateCharacter();
                 }
 
                 characters.Sort((a, b) => String.Compare(a.Name, b.Name, StringComparison.Ordinal));
@@ -114,16 +120,24 @@ namespace SteelFilter
             new Point(94,  567)
         };
 
+        static Point arrow_next = new Point(94, 567);
+
         Point[] make_shoushi =
         {
+            new Point(0,  0),
+            new Point(0,  0),
+            new Point(0,  0),
             new Point(330,  233),
-            new Point(50,  148),
-            new Point(97,  575),
+            new Point(0,  0),
+            new Point(0,  0),
+            new Point(0,  0),
+            new Point(50,  150),
+            arrow_next,
             new Point(42,  271),
-            new Point(94,  567),
-            new Point(94,  567),
-            new Point(94,  567),
-            new Point(94,  567)
+            arrow_next,
+            arrow_next,
+            arrow_next,
+            arrow_next
         };
 
         Point delete_char = new Point(126, 571);
@@ -161,6 +175,15 @@ namespace SteelFilter
             delete_cmds_index++;
         }
 
+        private void uninit_timers()
+        {
+            deleteCharacterTimer.Tick -= new EventHandler(DeleteCharacter_tick);
+            createCharacterTimer.Tick -= new EventHandler(createChacter_tick);
+            indexCreateCharClick = 0;
+            delete_cmds_index = 0;
+            deleteing_character = true;
+        }
+
         public bool CreateCharacter()
         {
             string name = randomName();
@@ -168,12 +191,12 @@ namespace SteelFilter
 
             indexCreateCharClick = 0;
             deleteing_character = true;
-            createCharacterTimer.Tick += new EventHandler(DeleteCharacter_tick);
-            createCharacterTimer.Interval = 1000;
-            createCharacterTimer.Start();
+            deleteCharacterTimer.Tick += new EventHandler(DeleteCharacter_tick);
+            deleteCharacterTimer.Interval = 900;
+            deleteCharacterTimer.Start();
 
             createCharacterTimer.Tick += new EventHandler(createChacter_tick);
-            createCharacterTimer.Interval = 300;
+            createCharacterTimer.Interval = 900;
             createCharacterTimer.Start();
 
             return true;
@@ -202,6 +225,7 @@ namespace SteelFilter
                 Filter.Shared.PostMessageTools.SendMouseClick(708, 583);
                 createCharacterTimer.Stop();
                 log.WriteDebug("Done.");
+                uninit_timers();
             }
             indexCreateCharClick++;
         }
