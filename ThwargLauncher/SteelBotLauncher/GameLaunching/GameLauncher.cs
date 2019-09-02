@@ -54,6 +54,8 @@ namespace SteelBotLauncher
             }
         }
 
+        int count_abc = 0;
+
         public GameLaunchResult LaunchGameClient(string exelocation,
             string serverName, string accountName, string password,
             string ipAddress,string gameApiUrl, string loginServerUrl, string discordurl,
@@ -81,6 +83,14 @@ namespace SteelBotLauncher
                 string ip = ipAddress.Substring(0, tok);
                 string port = ipAddress.Substring(tok + 1);
                 string genArgsGDLEServer;
+
+                string launchAccountName = accountName;
+                if (launchAccountName.ToLower().StartsWith("ztiel"))
+                {
+                    count_abc = (count_abc + 1) % 10;
+                    launchAccountName = accountName + count_abc;
+                }
+
                 if (rodatSetting == ServerModel.RodatEnum.On)
                 {
                     genArgsGDLEServer = "-h " + ip + " -p " + port + " -a " + accountName + ":" + password + " -rodat on";

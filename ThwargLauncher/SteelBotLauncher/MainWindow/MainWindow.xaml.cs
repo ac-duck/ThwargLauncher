@@ -430,8 +430,7 @@ namespace SteelBotLauncher
                 _launchWorker.LaunchQueue(_launchConcurrentQueue, _clientExeLocation);
             }
         }
-
-        int count_abc = 0;
+        
         private void UpdateConcurrentQueue()
         {
             var launchSorter = new LaunchSorter();
@@ -442,15 +441,11 @@ namespace SteelBotLauncher
                 _launchConcurrentQueue.Enqueue(item);
             }
             _gameMonitor.QueueReread();
-            count_abc = (count_abc + 1) % 10;
         }
         private void EnableInterface(bool enable)
         {
             btnLaunch.IsEnabled = enable;
         }
-
-        bool init = true;
-        string account_name = "";
 
         /// <summary>
         /// Get all server/accounts that are checked to be launched
@@ -469,27 +464,19 @@ namespace SteelBotLauncher
                     {
                         if (server.ServerSelected)
                         {
+                            var account_name = account.Name;
+                            
+
                             var state = _gameSessionMap.GetGameSessionStateByServerAccount(serverName: server.ServerName, accountName: account.Name);
                             if (state != ServerAccountStatusEnum.None)
                             {
                                 continue;
                             }
-
-                            if (init)
-                            {
-                                account_name = account.Name;
-                                init = false;
-                            }
-
-                            if (account.Name.ToLower().Contains("ztiel"))
-                            {
-                                account.Name = account_name + count_abc.ToString();
-                            }
-
+                            
                             var launchItem = new LaunchItem()
                             {
                                 Alias = account.Alias,
-                                AccountName = account.Name,
+                                AccountName = account_name,
                                 Priority = account.Priority,
                                 Password = account.Password,
                                 ServerName = server.ServerName,

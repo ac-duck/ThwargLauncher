@@ -555,12 +555,13 @@ namespace SteelFilter
                 if (DateTime.Now.Subtract(TimeSpan.FromMilliseconds(4000)) < loginCompleteTime)
                     return;
 
-                if (CoreManager.Current.CharacterFilter.Name.ToLower().StartsWith("z"))
+                if (CoreManager.Current.CharacterFilter.Name.ToLower().StartsWith("ztiel"))
                 {
                     Init_SteelRunner_Timer();
                 }
 
                 if (current_state == STEELBOT_STATE.LOGGING_OUT ||
+                    CoreManager.Current.CharacterFilter.Name.ToLower().StartsWith("ztiel") &&
                     DateTime.Now.Subtract(TimeSpan.FromMilliseconds(3*60*1000)) > loginCompleteTime )
                 { 
                     CoreManager.Current.RenderFrame -= new EventHandler<EventArgs>(Current_RenderFrame);

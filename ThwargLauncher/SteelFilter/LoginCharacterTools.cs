@@ -56,7 +56,7 @@ namespace SteelFilter
                     }
                 }
 
-                if(characters.Count < 10 && all_chars)
+                if(characters.Count < 10 && all_chars && !creating_character)
                 {
                     log.WriteDebug("Found less than 10 Ztiel characters, creating!");
                     CreateCharacter();
@@ -91,7 +91,7 @@ namespace SteelFilter
             return false;
         }
 
-        private string base_name = "Zteil ";
+        private string base_name = "Ztiel ";
         Random rand = new Random();
 
         private string randomLetter()
@@ -148,6 +148,7 @@ namespace SteelFilter
         Point delete_char = new Point(126, 571);
         Point delete_char_done = new Point(312, 361);
 
+        bool creating_character = false;
         int indexCreateCharClick = 0;
 
         readonly System.Windows.Forms.Timer createCharacterTimer = new System.Windows.Forms.Timer();
@@ -162,18 +163,28 @@ namespace SteelFilter
         {
             switch (delete_cmds_index) {
                 case 0:
-                    Filter.Shared.PostMessageTools.SendMouseClick(delete_char.X, delete_char.Y);
+                    Filter.Shared.PostMessageTools.SendMouseClick(0, 0);
                     break;
                 case 1:
-                    Filter.Shared.PostMessageTools.SendCharString("delete");
+                    Filter.Shared.PostMessageTools.SendMouseClick(0, 0);
                     break;
                 case 2:
-                    Filter.Shared.PostMessageTools.SendMouseClick(delete_char_done.X, delete_char_done.Y);
+                    Filter.Shared.PostMessageTools.SendMouseClick(0,0);
                     break;
                 case 3:
+                    Filter.Shared.PostMessageTools.SendMouseClick(delete_char.X, delete_char.Y);
+                    break;
+                case 4:
+                    Filter.Shared.PostMessageTools.SendCharString("delete");
+                    break;
+                case 5:
+                    Filter.Shared.PostMessageTools.SendMouseClick(delete_char_done.X, delete_char_done.Y);
+                    break;
+                case 6:
                     break;
                 default:
                     deleteCharacterTimer.Stop();
+                    deleteCharacterTimer.Tick -= new EventHandler(DeleteCharacter_tick);
                     deleteing_character = false;
                     break;
             }
@@ -182,19 +193,20 @@ namespace SteelFilter
 
         private void uninit_timers()
         {
-            deleteCharacterTimer.Tick -= new EventHandler(DeleteCharacter_tick);
             createCharacterTimer.Tick -= new EventHandler(createChacter_tick);
             indexCreateCharClick = 0;
             delete_cmds_index = 0;
-            deleteing_character = true;
+            deleteing_character = false;
         }
 
         public bool CreateCharacter()
         {
+            creating_character = true;
             string name = randomName();
             randomCharacterName = name;
 
             indexCreateCharClick = 0;
+            delete_cmds_index = 0;
             deleteing_character = true;
             deleteCharacterTimer.Tick += new EventHandler(DeleteCharacter_tick);
             deleteCharacterTimer.Interval = 900;
@@ -231,6 +243,7 @@ namespace SteelFilter
                 createCharacterTimer.Stop();
                 log.WriteDebug("Done.");
                 uninit_timers();
+                creating_character = false;
             }
             indexCreateCharClick++;
         }
