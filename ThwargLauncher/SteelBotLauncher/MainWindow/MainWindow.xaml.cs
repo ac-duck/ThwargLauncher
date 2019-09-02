@@ -430,17 +430,19 @@ namespace SteelBotLauncher
                 _launchWorker.LaunchQueue(_launchConcurrentQueue, _clientExeLocation);
             }
         }
-        
+
+        static int count_abc = 0;
         private void UpdateConcurrentQueue()
         {
             var launchSorter = new LaunchSorter();
             var launchList = GetLaunchListFromAccountList(_viewModel.KnownUserAccounts.Select(x => x.Account));
             launchList = launchSorter.SortLaunchList(launchList);
+            
             foreach (var item in launchList.GetLaunchList())
             {
                 _launchConcurrentQueue.Enqueue(item);
             }
-            _gameMonitor.QueueReread();
+            _gameMonitor.QueueReread();            
         }
         private void EnableInterface(bool enable)
         {
@@ -455,7 +457,15 @@ namespace SteelBotLauncher
         /// <returns></returns>
         private LaunchSorter.LaunchList GetLaunchListFromAccountList(IEnumerable<UserAccount> accountList)
         {
-            var launchList = new LaunchSorter.LaunchList();
+            var launchList = new LaunchSorter.LaunchList();            
+
+            if(_gameSessionMap.GetAllGameSessions().Count >= 3)
+            {
+                return launchList;
+            }
+
+            count_abc = (count_abc + 1) % 10;
+
             foreach (var account in accountList)
             {
                 if (account.AccountLaunchable)
@@ -465,7 +475,10 @@ namespace SteelBotLauncher
                         if (server.ServerSelected)
                         {
                             var account_name = account.Name;
-                            
+                            if (account.Name.ToLower().Contains("ztiel"))
+                            {
+                                account_name += count_abc.ToString();
+                            }
 
                             var state = _gameSessionMap.GetGameSessionStateByServerAccount(serverName: server.ServerName, accountName: account.Name);
                             if (state != ServerAccountStatusEnum.None)
